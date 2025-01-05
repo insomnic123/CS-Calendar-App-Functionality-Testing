@@ -100,8 +100,20 @@ public class Processing {
 
     public ArrayList<Event> calculateSchedule(Assignment assignment) {
         /*
+         OKAY REVISED PLANNNNN:
+         1. Calculating the amount of free time in each day leading up to the due date
+         2. Create a hashtable pairing the days leading up to the due date with amount of free time
+         3. Proportional Allocation!
+         4. Create function returning the times free during the day and return an arraylist of the times -- ensure
+         that any time free less than 30 mins is ignored
+         5. Compare the times ; is it possible to fit the allocated time within the largest time slot? What's the max
+         possible with 15 min buffer before and after events, notably avoiding scheduling events less than 30 mins?
+         6. Find sum of time dedicated and decide if it's sufficient (if it's within ~-10% of the estimated time,
+         it's probably fine)
+         7. Determine if plan is sufficient. If not, suggest to the user to switch things around.
+         8. DONE YOU HAVE A SUCCESSFUL SCHEDULE HOPEFULLY RAHHHHH
 
-         */
+                  */
 
         Hashtable<LocalDate, Double> freeTimePerDay = new Hashtable<>();
         ArrayList<Event> schedule = new ArrayList<>();
