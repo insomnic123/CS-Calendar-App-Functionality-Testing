@@ -1,4 +1,4 @@
-package PACKAGE_NAME;
+public class Hobby extends Event{
 
-public class Hobby {
+
 }

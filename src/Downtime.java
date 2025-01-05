@@ -1,4 +1,4 @@
-package PACKAGE_NAME;
+public class Downtime extends Event{
 
-public class Downtime {
+
 }
