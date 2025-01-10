@@ -18,6 +18,12 @@ public class NonNegotiable extends Event{
         this.endTime = LocalDateTime.parse(now.plusMinutes(30).format(formatter)); // Sets default to 30 mins from selected time
     }
 
+    // For quirks in processing file
+    public NonNegotiable(LocalDateTime startTime, LocalDateTime endTime) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
     // Default Constructor -- Individuals will be required to enter a title
     public NonNegotiable(String title, LocalDateTime startTime, LocalDateTime endTime) {
         super(title);
@@ -46,5 +52,9 @@ public class NonNegotiable extends Event{
 
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public String toString() {
+        return this.getStartTime() + " " + this.getEndTime();
     }
 }

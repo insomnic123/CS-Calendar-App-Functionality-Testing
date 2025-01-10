@@ -1,19 +1,11 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-    /*
-    OKAY SO FOR PROCESSING
-
-    1. For testing, only consider the dates
-    2. For each day leading up to the due date, calculate the amount of free time
-    per day and create a hashmap
-    3. Perform the proportional allocation calculation
-    4. Establish schedule and return an arraylist of the event dates w/ times
-     */
 
 public class Processing {
 
@@ -69,8 +61,8 @@ public class Processing {
 
 
     public double findFreeTime(LocalDateTime day) {
-        // Start and end of day (8 AM - 10 PM)
-        LocalDateTime dayStart = day.with(LocalTime.of(8, 0));  // 8 AM
+        // Start and end of day (9 AM - 10 PM)
+        LocalDateTime dayStart = day.with(LocalTime.of(9, 0));  // 9 AM
         LocalDateTime dayEnd = day.with(LocalTime.of(22, 0));  // 10 PM
 
         List<NonNegotiable> events = getEventsForDay(day);
@@ -95,92 +87,214 @@ public class Processing {
         Duration totalAvailableTime = Duration.between(dayStart, dayEnd);
         Duration freeTime = totalAvailableTime.minus(busyTime);
 
-        return freeTime.toMinutes() / 60.0; // Return free time in hours
+        if (freeTime.toMinutes() <= 30) {
+            return 0;
+        } else {
+            return freeTime.toMinutes() / 60.0; // Return free time in hours
+        }
     }
 
-    public ArrayList<Event> calculateSchedule(Assignment assignment) {
-        /*
-         OKAY REVISED PLANNNNN:
-         1. Calculating the amount of free time in each day leading up to the due date
-         2. Create a hashtable pairing the days leading up to the due date with amount of free time
-         3. Proportional Allocation!
-         4. Create function returning the times free during the day and return an arraylist of the times -- ensure
-         that any time free less than 30 mins is ignored
-         5. Compare the times ; is it possible to fit the allocated time within the largest time slot? What's the max
-         possible with 15 min buffer before and after events, notably avoiding scheduling events less than 30 mins?
-         6. Find sum of time dedicated and decide if it's sufficient (if it's within ~-10% of the estimated time,
-         it's probably fine)
-         7. Determine if plan is sufficient. If not, suggest to the user to switch things around.
-         8. DONE YOU HAVE A SUCCESSFUL SCHEDULE HOPEFULLY RAHHHHH
+    public Map<LocalDateTime, LocalDateTime> getEventsAndFreeTime(LocalDateTime day) {
+        LocalDateTime dayStart = day.with(LocalTime.of(9, 0));  // 8 AM
+        LocalDateTime dayEnd = day.with(LocalTime.of(22, 0));  // 10 PM
 
-                  */
+        List<NonNegotiable> events = getEventsForDay(day);
+        events.sort(Comparator.comparing(NonNegotiable::getStartTime)); // Sort events by start time
 
-        Hashtable<LocalDate, Double> freeTimePerDay = new Hashtable<>();
-        ArrayList<Event> schedule = new ArrayList<>();
+        Map<LocalDateTime, LocalDateTime> freeTimes = new LinkedHashMap<>();
+        LocalDateTime currentPointer = dayStart;
 
-        LocalDate dueDate = assignment.getDeadline().toLocalDate();
-        LocalDate planningStart = LocalDate.now();
+        for (NonNegotiable event : events) {
+            LocalDateTime eventStart = event.getStartTime();
+            LocalDateTime eventEnd = event.getEndTime();
 
-        double totalFreeTime = 0.0; // total free time
-        double totalTimeToComplete = assignment.getEstimatedTime(); // estimated time to completion
-
-        // Calculates the amount of free time per day and adds it to a hashtable
-        LocalDate currentDay = planningStart;
-        while (!currentDay.isAfter(dueDate)) {
-            double freeTime = findFreeTime(currentDay.atStartOfDay());
-            freeTimePerDay.put(currentDay, freeTime);
-            totalFreeTime += freeTime;
-            currentDay = currentDay.plusDays(1);
-        }
-
-        // Allocates time using proportional allocation
-        for (Map.Entry<LocalDate, Double> entry : freeTimePerDay.entrySet()) {
-            LocalDate day = entry.getKey();
-            double freeTime = entry.getValue();
-
-            // Skip days with minimal free time
-            if (freeTime <= 0.5) continue;
-
-            double timeAllocated = proportionalAllocation(freeTime, totalFreeTime, totalTimeToComplete); // Calculates the time that can be allocated per day
-
-            if (timeAllocated > 0) {
-                // Average Day Assumption (starts at 8 AM, ends at 10 PM) -- Can be modified and customized later on
-                LocalDateTime dayStart = day.atTime(8, 0); // Start at 8 AM
-                LocalDateTime dayEnd = day.atTime(22, 0); // End at 10 PM
-
-                List<NonNegotiable> dayEvents = getEventsForDay(dayStart);
-                dayEvents.sort(Comparator.comparing(NonNegotiable::getStartTime));
-
-                // Find available slots to schedule the allocated time
-                LocalDateTime currentStart = dayStart;
-                for (NonNegotiable event : dayEvents) {
-                    LocalDateTime eventStart = event.getStartTime();
-                    LocalDateTime eventEnd = event.getEndTime();
-
-                    // Check if there's enough space before the next event
-                    if (Duration.between(currentStart, eventStart).toHours() >= timeAllocated) {
-                        schedule.add(new NonNegotiable(assignment.getTitle(), assignment.getDescription(), currentStart, currentStart.plusHours((long) timeAllocated)));
-                        timeAllocated = 0; // All time allocated
-                        break;
-                    }
-
-                    currentStart = eventEnd.isAfter(currentStart) ? eventEnd : currentStart;
+            // Add free time slot before this event if it exists
+            if (currentPointer.isBefore(eventStart)) {
+                Duration freeSlot = Duration.between(currentPointer, eventStart);
+                if (freeSlot.toMinutes() >= 30) {
+                    freeTimes.put(currentPointer, eventStart);
                 }
-
-                // If there's remaining time, use it at the end of the day
-                if (timeAllocated > 0 && Duration.between(currentStart, dayEnd).toHours() >= timeAllocated) {
-                    schedule.add(new NonNegotiable(assignment.getTitle(), assignment.getDescription(), currentStart, currentStart.plusHours((long) timeAllocated)));
-                    timeAllocated = 0;
-                }
-
-                if (timeAllocated > 0) {
-                    totalTimeToComplete -= timeAllocated;
-                } else {
-                    totalFreeTime -= freeTime;
-                }
+            }
+            // Update the pointer to the end of the current event
+            if (eventEnd.isAfter(currentPointer)) {
+                currentPointer = eventEnd;
             }
         }
 
-        return schedule;
+        // Add free time slot after the last event until dayEnd
+        if (currentPointer.isBefore(dayEnd)) {
+            Duration freeSlot = Duration.between(currentPointer, dayEnd);
+            if (freeSlot.toMinutes() >= 30) {
+                freeTimes.put(currentPointer, dayEnd);
+            }
+        }
+
+        // Returns a start and end time of 12AM such that the program knows to account for the day, and skip the value
+        if (freeTimes.isEmpty()) {
+            freeTimes.put(day.with(LocalTime.MIDNIGHT), day.with(LocalTime.MIDNIGHT));
+        }
+
+        return freeTimes;
+    }
+
+    public ArrayList<Event> calculateSchedule(Assignment assignment) {
+
+        double durationSum = 0;
+        double totalFreeTime = 0;
+        ArrayList<Event> schedule = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline());
+        Map<LocalDateTime, Double> daysAndFreeTime = new LinkedHashMap<>();
+        List<Map<LocalDateTime, LocalDateTime>> freeTimeSlots = new ArrayList<>();
+
+        // Counts days in between two dates and creates dictionary with (Date, Time Available That Day)
+        for (int i = 1; i-1 < daysBeforeDueDate; i++) {
+            LocalDateTime daDate = today.atStartOfDay().plusDays(i);
+            totalFreeTime += findFreeTime(daDate);
+            daysAndFreeTime.put(daDate, findFreeTime(daDate));
+            freeTimeSlots.add(getEventsAndFreeTime(daDate));
+        }
+
+        System.out.println("Total Free Time: " + totalFreeTime);
+        System.out.println("Days Before Due Date: " + daysBeforeDueDate);
+        System.out.println(daysAndFreeTime);
+        System.out.println(freeTimeSlots);
+
+        // If the total time - 15% is less than the estimated time to completion, then it prints an error
+        if (totalFreeTime - (totalFreeTime * 0.15) < assignment.getEstimatedTime()) {
+            System.out.println("Not enough time");
+        }
+
+        Map<LocalDateTime, Double> workToDoInTheDay = new LinkedHashMap<>();
+
+
+        double sum = 0;
+        for (Map.Entry<LocalDateTime, Double> iterator : daysAndFreeTime.entrySet()) {
+            double timeToWork = proportionalAllocation(iterator.getValue(), totalFreeTime, assignment.getEstimatedTime());
+            System.out.println(timeToWork);
+            sum+= timeToWork;
+            System.out.println("key: " + iterator.getKey() + " Value " + timeToWork);
+            workToDoInTheDay.put(iterator.getKey(), timeToWork);
+        }
+        System.out.println(sum);
+
+        System.out.println("-----");
+
+        Iterator test = workToDoInTheDay.keySet().iterator();
+
+        for (int i = 1; i < daysBeforeDueDate; i++) {
+            Map<LocalDateTime, LocalDateTime> timeSlotsDuringDay = freeTimeSlots.get(i);
+            Map<Duration, NonNegotiable> durations = new Hashtable<>();
+            System.out.println((timeSlotsDuringDay.size() == 1));
+
+            for (Map.Entry<LocalDateTime, LocalDateTime> entry : timeSlotsDuringDay.entrySet()) {
+                LocalDateTime key = entry.getKey();
+                LocalDateTime value = entry.getValue();
+                Duration duration = Duration.between(key, value);
+                NonNegotiable temp = new NonNegotiable(key, value);
+                System.out.println("StartTime: " + key);
+                System.out.println("EndTime: " + value);
+                System.out.println("Duration: " + duration);
+                durations.put(duration, temp);
+            }
+
+            LocalDateTime key = (LocalDateTime) test.next();
+            if (timeSlotsDuringDay.size() == 1) {
+                ArrayList<NonNegotiable> temp = new ArrayList<>(durations.values());
+                ArrayList<Duration> temp2 = new ArrayList<>(durations.keySet());
+
+                LocalDateTime startTime = temp.get(0).getStartTime();
+                double duration = workToDoInTheDay.get(key);
+                LocalDateTime endTime = startTime.plusHours((long) duration);
+
+                System.out.println("-----");
+
+                System.out.println("Start Time Of Work: " + startTime);
+                System.out.println("End Time Of Work: " + endTime);
+                System.out.println("Duration Of Work: " + duration);
+
+                NonNegotiable event = new NonNegotiable(assignment.getTitle(), assignment.getDescription(), startTime, endTime);
+            }
+            else {
+                System.out.println("save me oh mya daufaefygfih");
+            }
+        }
+
+        System.out.println(" ---- ");
+
+//        for (int i = 1; i < daysBeforeDueDate; i++) {
+//            LocalDateTime daDate = today.atStartOfDay().plusDays(i);
+//            Map<LocalDateTime, LocalDateTime> timeSlotsDuringDay = freeTimeSlots.get(i);
+//
+//            System.out.println((timeSlotsDuringDay.size() == 1));
+//
+//            if (timeSlotsDuringDay.size() == 1) {
+//                LocalDateTime startTime = workToDoInTheDay.keySet().iterator().next();
+//                double duration = workToDoInTheDay.get(startTime);
+//                LocalDateTime endTime = startTime.plusMinutes((long) duration);
+//
+//                System.out.println(startTime);
+//                System.out.println(endTime);
+//                System.out.println(duration);
+//
+//                NonNegotiable event = new NonNegotiable(assignment.getTitle(), assignment.getDescription(), startTime, endTime);
+//            }
+//
+//            if (timeSlotsDuringDay.size() > 1) {
+//                Map<Duration, NonNegotiable> durations = new Hashtable<>();
+//
+//                // Iterate through the map
+//                for (Map.Entry<LocalDateTime, LocalDateTime> entry : timeSlotsDuringDay.entrySet()) {
+//                    LocalDateTime key = entry.getKey();
+//                    LocalDateTime value = entry.getValue();
+//                    Duration duration = Duration.between(key, value);
+//                    NonNegotiable temp = new NonNegotiable(key, value);
+//                    durations.put(duration, temp);
+//                }
+//
+//                Map<Duration, NonNegotiable> sortedMap = new TreeMap<>(durations).reversed(); //  Sorts durations from greatest to least
+//
+//                for (Map.Entry<Duration, NonNegotiable> entry : sortedMap.entrySet()) {
+//                    double workToDoInTheDayValue = workToDoInTheDay.getOrDefault(daDate, 0.0);
+//                    double freeTimeRemaining = workToDoInTheDay.get(daDate) - entry.getKey().toMinutes();
+//                    Duration timeDifferenceBetweenFreeTimeAndWorkToDo = Duration.between(entry.getValue().getStartTime(), entry.getValue().getEndTime());
+//                    if (timeDifferenceBetweenFreeTimeAndWorkToDo.toMinutes() > workToDoInTheDayValue) {
+//                        NonNegotiable event = new NonNegotiable(
+//                                assignment.getTitle(),
+//                                assignment.getDescription(),
+//                                entry.getValue().getStartTime(),
+//                                entry.getValue().getStartTime().plusMinutes((long) workToDoInTheDayValue)
+//                        );
+//                        schedule.add(event);
+//
+//                    }
+//                    else {
+//                        while (freeTimeRemaining > workToDoInTheDayValue) {
+//
+//                            LocalDateTime endTime;
+//
+//                            if (entry.getValue().getStartTime().plusMinutes((long) freeTimeRemaining).isAfter(entry.getValue().getEndTime())) {
+//                                endTime = entry.getValue().getStartTime().plus(Duration.between(entry.getValue().getStartTime(), entry.getValue().getEndTime()));
+//                            }
+//                            else {
+//                                endTime = entry.getValue().getStartTime().plusMinutes((long) workToDoInTheDayValue);
+//                            }
+//
+//                            NonNegotiable event = new NonNegotiable(
+//                                    assignment.getTitle(),
+//                                    assignment.getDescription(),
+//                                    entry.getValue().getStartTime(),
+//                                    endTime
+//                            );
+//
+//                            freeTimeRemaining =- Duration.between(entry.getValue().getStartTime(), entry.getValue().getEndTime()).toMinutes();
+//
+//                            schedule.add(event);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+    return schedule;
     }
 }
