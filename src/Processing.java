@@ -2,9 +2,13 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAmount;
 import java.util.*;
 
 public class Processing {
@@ -137,7 +141,7 @@ public class Processing {
         return freeTimes;
     }
 
-    public ArrayList<Event> calculateSchedule(Assignment assignment) {
+    public ArrayList<Event> calculateSchedule(Assignment assignment) throws ParseException {
 
         double durationSum = 0;
         double totalFreeTime = 0;
@@ -166,7 +170,6 @@ public class Processing {
         }
 
         Map<LocalDateTime, Double> workToDoInTheDay = new LinkedHashMap<>();
-
 
         double sum = 0;
         for (Map.Entry<LocalDateTime, Double> iterator : daysAndFreeTime.entrySet()) {
@@ -214,87 +217,52 @@ public class Processing {
                 System.out.println("Duration Of Work: " + duration);
 
                 NonNegotiable event = new NonNegotiable(assignment.getTitle(), assignment.getDescription(), startTime, endTime);
+
+                schedule.add(event);
             }
             else {
-                System.out.println("save me oh mya daufaefygfih");
+                Map<Duration, NonNegotiable> sortedMap = new TreeMap<>(durations).reversed(); //  Sorts durations from greatest to least
+                System.out.println("------");
+
+                ArrayList<NonNegotiable> timeSlots = new ArrayList<>(sortedMap.values());
+                ArrayList<Duration> durations1 = new ArrayList<>(sortedMap.keySet());
+
+                double remainingTime = workToDoInTheDay.get(key) * 60;
+
+                int tracker = -1;
+
+                while (remainingTime > 0 && tracker < timeSlots.size()-1) {
+                    tracker++;
+                    LocalDateTime endTime;
+                    if (Duration.between(timeSlots.get(tracker).getStartTime(), timeSlots.get(tracker).getStartTime().plusMinutes((long) remainingTime)).toMinutes() >
+                            Duration.between(timeSlots.get(tracker).getStartTime(), timeSlots.get(tracker).getStartTime().plusMinutes(durations1.get(tracker).toMinutes())).toMinutes()) {
+
+                        endTime = timeSlots.get(tracker).getEndTime();
+                        remainingTime -= durations1.get(tracker).toMinutes();
+                    } else {
+
+                        System.out.println("Time in Minutes" + remainingTime);
+
+                        endTime = timeSlots.get(tracker).getStartTime().plus((long) remainingTime, ChronoUnit.MINUTES);
+
+                        remainingTime =- remainingTime;
+                    }
+
+                    System.out.println(endTime);
+
+                    NonNegotiable event = new NonNegotiable(
+                            assignment.getTitle(),
+                            assignment.getDescription(),
+                            timeSlots.get(tracker).getStartTime(),
+                            endTime
+                    );
+
+                    schedule.add(event);
+                }
+
             }
         }
-
         System.out.println(" ---- ");
-
-//        for (int i = 1; i < daysBeforeDueDate; i++) {
-//            LocalDateTime daDate = today.atStartOfDay().plusDays(i);
-//            Map<LocalDateTime, LocalDateTime> timeSlotsDuringDay = freeTimeSlots.get(i);
-//
-//            System.out.println((timeSlotsDuringDay.size() == 1));
-//
-//            if (timeSlotsDuringDay.size() == 1) {
-//                LocalDateTime startTime = workToDoInTheDay.keySet().iterator().next();
-//                double duration = workToDoInTheDay.get(startTime);
-//                LocalDateTime endTime = startTime.plusMinutes((long) duration);
-//
-//                System.out.println(startTime);
-//                System.out.println(endTime);
-//                System.out.println(duration);
-//
-//                NonNegotiable event = new NonNegotiable(assignment.getTitle(), assignment.getDescription(), startTime, endTime);
-//            }
-//
-//            if (timeSlotsDuringDay.size() > 1) {
-//                Map<Duration, NonNegotiable> durations = new Hashtable<>();
-//
-//                // Iterate through the map
-//                for (Map.Entry<LocalDateTime, LocalDateTime> entry : timeSlotsDuringDay.entrySet()) {
-//                    LocalDateTime key = entry.getKey();
-//                    LocalDateTime value = entry.getValue();
-//                    Duration duration = Duration.between(key, value);
-//                    NonNegotiable temp = new NonNegotiable(key, value);
-//                    durations.put(duration, temp);
-//                }
-//
-//                Map<Duration, NonNegotiable> sortedMap = new TreeMap<>(durations).reversed(); //  Sorts durations from greatest to least
-//
-//                for (Map.Entry<Duration, NonNegotiable> entry : sortedMap.entrySet()) {
-//                    double workToDoInTheDayValue = workToDoInTheDay.getOrDefault(daDate, 0.0);
-//                    double freeTimeRemaining = workToDoInTheDay.get(daDate) - entry.getKey().toMinutes();
-//                    Duration timeDifferenceBetweenFreeTimeAndWorkToDo = Duration.between(entry.getValue().getStartTime(), entry.getValue().getEndTime());
-//                    if (timeDifferenceBetweenFreeTimeAndWorkToDo.toMinutes() > workToDoInTheDayValue) {
-//                        NonNegotiable event = new NonNegotiable(
-//                                assignment.getTitle(),
-//                                assignment.getDescription(),
-//                                entry.getValue().getStartTime(),
-//                                entry.getValue().getStartTime().plusMinutes((long) workToDoInTheDayValue)
-//                        );
-//                        schedule.add(event);
-//
-//                    }
-//                    else {
-//                        while (freeTimeRemaining > workToDoInTheDayValue) {
-//
-//                            LocalDateTime endTime;
-//
-//                            if (entry.getValue().getStartTime().plusMinutes((long) freeTimeRemaining).isAfter(entry.getValue().getEndTime())) {
-//                                endTime = entry.getValue().getStartTime().plus(Duration.between(entry.getValue().getStartTime(), entry.getValue().getEndTime()));
-//                            }
-//                            else {
-//                                endTime = entry.getValue().getStartTime().plusMinutes((long) workToDoInTheDayValue);
-//                            }
-//
-//                            NonNegotiable event = new NonNegotiable(
-//                                    assignment.getTitle(),
-//                                    assignment.getDescription(),
-//                                    entry.getValue().getStartTime(),
-//                                    endTime
-//                            );
-//
-//                            freeTimeRemaining =- Duration.between(entry.getValue().getStartTime(), entry.getValue().getEndTime()).toMinutes();
-//
-//                            schedule.add(event);
-//                        }
-//                    }
-//                }
-//            }
-//        }
     return schedule;
     }
 }
