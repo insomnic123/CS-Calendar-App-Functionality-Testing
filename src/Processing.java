@@ -146,7 +146,7 @@ public class Processing {
         double totalFreeTime = 0;
         ArrayList<NonNegotiable> schedule = new ArrayList<>();
         LocalDate today = LocalDate.now();
-        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline());
+        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline().plusDays(1));
         Map<LocalDateTime, Double> daysAndFreeTime = new LinkedHashMap<>();
         List<Map<LocalDateTime, LocalDateTime>> freeTimeSlots = new ArrayList<>();
 
@@ -154,6 +154,7 @@ public class Processing {
         for (int i = 1; i-1 < daysBeforeDueDate; i++) {
             LocalDateTime daDate = today.atStartOfDay().plusDays(i);
             totalFreeTime += findFreeTime(daDate);
+            System.out.println("The date: " + daDate);
             daysAndFreeTime.put(daDate, findFreeTime(daDate));
             freeTimeSlots.add(getEventsAndFreeTime(daDate));
         }
