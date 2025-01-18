@@ -4,9 +4,9 @@ import java.util.Hashtable;
 public class Tag {
 
     // Dictionary defining tags
-    public static Dictionary tags = new Hashtable(); // https://codegym.cc/groups/posts/how-to-create-a-dictionary-in-java
+    public static Dictionary<String, String> tags = new Hashtable(); // https://codegym.cc/groups/posts/how-to-create-a-dictionary-in-java
 
-    private static String tagName;
+    private String tagName;
     private String tagColour;
 
     // Custom Tags - Users must specify colour and tag name
@@ -14,13 +14,7 @@ public class Tag {
         this.tagName = tagName;
         this.tagColour = tagColour;
 
-        tags.put(tagColour, tagName); // Adding tags to dictionary
-    }
-
-    // Finds tag name based on colour
-    public static String findTagName(String tagColour) {
-        tagName = (String) tags.get(tagColour);
-        return tagName;
+        tags.put(tagName, tagColour); // Adding tags to dictionary
     }
 
     // getters and setters

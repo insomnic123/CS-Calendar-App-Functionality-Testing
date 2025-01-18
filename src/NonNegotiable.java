@@ -37,6 +37,12 @@ public class NonNegotiable extends Event{
         this.endTime = endTime;
     }
 
+    public NonNegotiable(String title, String description, String tag, LocalDateTime startTime, LocalDateTime endTime) {
+        super(title, description, tag);
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
     // getters and setters
     public LocalDateTime getStartTime() {
         return startTime;

@@ -19,6 +19,12 @@ public class Assignment extends Event {
         this.estimatedTime = estimatedTime;
     }
 
+    public Assignment(String title, String description, String tag, LocalDateTime deadline, double estimatedTime) {
+        super(title, description, tag);
+        this.deadline = deadline;
+        this.estimatedTime = estimatedTime;
+    }
+
     // getters and setters
     public LocalDateTime getDeadline() {
         return deadline;

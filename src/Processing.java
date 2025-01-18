@@ -66,7 +66,7 @@ public class Processing {
 
     public double findFreeTime(LocalDateTime day) {
         // Start and end of day (9 AM - 10 PM)
-        LocalDateTime dayStart = day.with(LocalTime.of(9, 0));  // 9 AM
+        LocalDateTime dayStart = day.with(LocalTime.of(7, 0));  // 9 AM
         LocalDateTime dayEnd = day.with(LocalTime.of(22, 0));  // 10 PM
 
         List<NonNegotiable> events = getEventsForDay(day);
@@ -99,7 +99,7 @@ public class Processing {
     }
 
     public Map<LocalDateTime, LocalDateTime> getEventsAndFreeTime(LocalDateTime day) {
-        LocalDateTime dayStart = day.with(LocalTime.of(9, 0));  // 8 AM
+        LocalDateTime dayStart = day.with(LocalTime.of(7, 0));  // 8 AM
         LocalDateTime dayEnd = day.with(LocalTime.of(22, 0));  // 10 PM
 
         List<NonNegotiable> events = getEventsForDay(day);
@@ -141,11 +141,10 @@ public class Processing {
         return freeTimes;
     }
 
-    public ArrayList<Event> calculateSchedule(Assignment assignment) throws ParseException {
+    public ArrayList<NonNegotiable> calculateSchedule(Assignment assignment) throws ParseException {
 
-        double durationSum = 0;
         double totalFreeTime = 0;
-        ArrayList<Event> schedule = new ArrayList<>();
+        ArrayList<NonNegotiable> schedule = new ArrayList<>();
         LocalDate today = LocalDate.now();
         long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline());
         Map<LocalDateTime, Double> daysAndFreeTime = new LinkedHashMap<>();
@@ -210,7 +209,7 @@ public class Processing {
 
             int tracker = -1;
 
-            while (remainingTime > 0) {
+            while (remainingTime > 0 && tracker < timeSlots.size() - 1) {
                 tracker++;
                 LocalDateTime endTime;
                 if (remainingTime > durations1.get(tracker).toMinutes()) {
@@ -231,6 +230,7 @@ public class Processing {
                 NonNegotiable event = new NonNegotiable(
                         assignment.getTitle(),
                         assignment.getDescription(),
+                        assignment.getTag(),
                         timeSlots.get(tracker).getStartTime(),
                         endTime
                 );
@@ -240,6 +240,20 @@ public class Processing {
 
         }
         System.out.println(" ---- ");
+
+        ArrayList<Event> temp = new ArrayList<>();
+
+        System.out.println("Events to be written to CSV: ");
+        for (NonNegotiable event : schedule) {
+            System.out.println(event);
+        }
+
+        for (NonNegotiable event : schedule) {
+            temp.add(event);
+        }
+
+        CSVWriterStuff.writeEventsToCSV(temp);
+
     return schedule;
     }
 }

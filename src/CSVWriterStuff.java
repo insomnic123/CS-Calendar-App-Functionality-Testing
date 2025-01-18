@@ -1,34 +1,7 @@
-/*
-THIS IS FOR TESTING PURPOSES ONLY
-The final product should use MongoDB or some other formal type of database instead of CSV Files
-
-As per the improvised documenting journal thing, each nn should be stored w the following params:
-
-genericEventExample {
-tag: ‘null’/…. (user tags)
-type: non-negotiable/assignment/hobby/downtime
-title: ‘null’/….
-description: ‘null’/…
-startTime: LocalDate + LocalTime - https://www.w3schools.com/java/java_date.asp
-endTime: 〃
-backgroundColor: #5a1e75 (default)
-borderColor: Determined based on Tag - https://fullcalendar.io/docs/eventBorderColor
-}
-
-Ex.
-User Input {
-Assignment Title: English HW
-Description: /
-Tag: English
-Due Date: Jan 5th, 2025 (Assumed 11:59 PM)
-Estimated Time to Completion: 5 hrs
-}
- */
-
 // Code generated partly by ChatGPT, partly coded myself
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CSVWriterStuff {
@@ -37,6 +10,7 @@ public class CSVWriterStuff {
 
     /**
      * Writes a list of Event objects (including subclasses like NonNegotiable) to a CSV file.
+     *
      * @param events List of Event objects
      */
     public static void writeEventsToCSV(List<Event> events) {
@@ -80,4 +54,100 @@ public class CSVWriterStuff {
             e.printStackTrace();
         }
     }
+
+    public static ArrayList<String> filterByTag(String tagToFilter) {
+        ArrayList<String> filteredResults = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader("events.csv"))) {
+            String line = br.readLine(); // Read header line
+            String[] headers = line.split(","); // Split headers by comma
+
+            int tagIndex = -1, titleIndex = -1, startTimeIndex = -1, endTimeIndex = -1;
+
+            // Find the indices of the relevant columns
+            for (int i = 0; i < headers.length; i++) {
+                String header = headers[i].trim();
+                if (header.equalsIgnoreCase("Tag")) {
+                    tagIndex = i;
+                } else if (header.equalsIgnoreCase("Title")) {
+                    titleIndex = i;
+                } else if (header.equalsIgnoreCase("StartTime")) {
+                    startTimeIndex = i;
+                } else if (header.equalsIgnoreCase("EndTime")) {
+                    endTimeIndex = i;
+                }
+            }
+
+            if (tagIndex == -1 || titleIndex == -1 || startTimeIndex == -1 || endTimeIndex == -1) {
+                System.err.println("One or more required columns ('Tags', 'Title', 'StartTime', 'EndTime') are missing in the CSV file.");
+                return filteredResults;
+            }
+
+            // Process the rows
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(",");
+                if (values.length > Math.max(tagIndex, Math.max(titleIndex, Math.max(startTimeIndex, endTimeIndex)))) {
+                    String tagValue = values[tagIndex].trim();
+                    if (tagValue.equalsIgnoreCase(tagToFilter)) {
+                        String title = values[titleIndex].trim();
+                        String startTime = values[startTimeIndex].trim();
+                        String endTime = values[endTimeIndex].trim();
+                        filteredResults.add("Title: " + title + " | Start Time: " + startTime + " | End Time: " + endTime);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return filteredResults;
+    }
+
+    public static ArrayList<NonNegotiable> filterAndRemoveByTitle(String titleToRemove) {
+        ArrayList<NonNegotiable> remainingEvents = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader("events.csv"))) {
+            String line = br.readLine(); // Read header line
+            String[] headers = line.split(","); // Split headers by comma
+
+            int titleIndex = -1, startTimeIndex = -1, endTimeIndex = -1;
+
+            // Find the indices of the relevant columns
+            for (int i = 0; i < headers.length; i++) {
+                String header = headers[i].trim();
+                if (header.equalsIgnoreCase("Title")) {
+                    titleIndex = i;
+                } else if (header.equalsIgnoreCase("StartTime")) {
+                    startTimeIndex = i;
+                } else if (header.equalsIgnoreCase("EndTime")) {
+                    endTimeIndex = i;
+                }
+            }
+
+            if (titleIndex == -1 || startTimeIndex == -1 || endTimeIndex == -1) {
+                System.err.println("One or more required columns ('Title', 'StartTime', 'EndTime') are missing in the CSV file.");
+                return remainingEvents;
+            }
+
+            // Process the rows
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(",");
+                if (values.length > Math.max(titleIndex, Math.max(startTimeIndex, endTimeIndex))) {
+                    String title = values[titleIndex].trim();
+                    String startTime = values[startTimeIndex].trim();
+                    String endTime = values[endTimeIndex].trim();
+
+                    // Add to the list only if the title does not match the given title to remove
+                    if (!title.equalsIgnoreCase(titleToRemove)) {
+                        remainingEvents.add(new NonNegotiable(title, LocalDateTime.parse(startTime, Main.formatter), LocalDateTime.parse(endTime, Main.formatter)));
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return remainingEvents;
+    }
+
+
 }

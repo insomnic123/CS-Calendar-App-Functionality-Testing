@@ -24,16 +24,24 @@ public class Event {
         this.title = title;
         this.description = " ";
         this.allDay = false;
-        this.colour = "#5a1e75"; // Default color
+        this.colour = "#5a1e75"; //
+        this.tag = "null";
     }
 
-    // Constructor with all required fields
-    public Event(String title, String colour) {
+    public Event(String title, String description) {
         this.title = title;
-        this.description = " ";
+        this.description = description;
         this.allDay = false;
-        this.colour = colour;
+        this.colour = "#5a1e75";
         this.tag = "null";
+    }
+
+    public Event(String title, String description, String tag) {
+        this.title = title;
+        this.description = description;
+        this.allDay = false;
+        this.tag = tag;
+        this.colour = Tag.tags.get(tag);
     }
 
     // Constructor with all fields
@@ -84,10 +92,5 @@ public class Event {
 
     public String getTag() {
         return tag;
-    }
-
-    // Finds tagName based on given colour
-    public String findTag(String colour) {
-        return (String) Tag.findTagName(colour);
     }
 }
