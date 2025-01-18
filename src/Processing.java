@@ -146,12 +146,12 @@ public class Processing {
         double totalFreeTime = 0;
         ArrayList<NonNegotiable> schedule = new ArrayList<>();
         LocalDate today = LocalDate.now();
-        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline().plusDays(1));
+        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline());
         Map<LocalDateTime, Double> daysAndFreeTime = new LinkedHashMap<>();
         List<Map<LocalDateTime, LocalDateTime>> freeTimeSlots = new ArrayList<>();
 
         // Counts days in between two dates and creates dictionary with (Date, Time Available That Day)
-        for (int i = 1; i-1 < daysBeforeDueDate; i++) {
+        for (int i = 0; i-1 < daysBeforeDueDate; i++) {
             LocalDateTime daDate = today.atStartOfDay().plusDays(i);
             totalFreeTime += findFreeTime(daDate);
             System.out.println("The date: " + daDate);
