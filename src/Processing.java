@@ -151,19 +151,17 @@ public class Processing {
         List<Map<LocalDateTime, LocalDateTime>> freeTimeSlots = new ArrayList<>();
 
         // Counts days in between two dates and creates dictionary with (Date, Time Available That Day)
-        for (int i = 0; i-1 < daysBeforeDueDate; i++) {
+        for (int i = 1; i-1 < daysBeforeDueDate; i++) {
             LocalDateTime daDate = today.atStartOfDay().plusDays(i);
             totalFreeTime += findFreeTime(daDate);
-            System.out.println("The date: " + daDate);
             daysAndFreeTime.put(daDate, findFreeTime(daDate));
             freeTimeSlots.add(getEventsAndFreeTime(daDate));
         }
 
-        System.out.println(daysAndFreeTime);
-
         // If the total time - 15% is less than the estimated time to completion, then it prints an error
         if (totalFreeTime - (totalFreeTime * 0.15) < assignment.getEstimatedTime()) {
             System.out.println("Not enough time");
+            return schedule;
         }
 
         Map<LocalDateTime, Double> workToDoInTheDay = new LinkedHashMap<>();
@@ -172,36 +170,26 @@ public class Processing {
         for (Map.Entry<LocalDateTime, Double> iterator : daysAndFreeTime.entrySet()) {
             double timeToWork = proportionalAllocation(iterator.getValue(), totalFreeTime, assignment.getEstimatedTime());
             sum+= timeToWork;
-            System.out.println("date: " + iterator.getKey() + " Time To Work " + timeToWork);
             workToDoInTheDay.put(iterator.getKey(), timeToWork);
         }
-        System.out.println(sum);
-
-        System.out.println("-----");
 
         List<LocalDateTime> keys = new ArrayList<>(workToDoInTheDay.keySet());
 
-        for (int i = 1; i < daysBeforeDueDate; i++) {
+        for (int i = 0; i < daysBeforeDueDate; i++) {
             Map<LocalDateTime, LocalDateTime> timeSlotsDuringDay = freeTimeSlots.get(i);
             Map<Duration, NonNegotiable> durations = new Hashtable<>();
-            System.out.println((timeSlotsDuringDay.size() == 1));
 
             for (Map.Entry<LocalDateTime, LocalDateTime> entry : timeSlotsDuringDay.entrySet()) {
-                System.out.println("-----");
                 LocalDateTime key = entry.getKey();
                 LocalDateTime value = entry.getValue();
                 Duration duration = Duration.between(key, value);
                 NonNegotiable temp = new NonNegotiable(key, value);
-                System.out.println("StartTime: " + key);
-                System.out.println("EndTime: " + value);
-                System.out.println("Duration: " + duration);
                 durations.put(duration, temp);
             }
 
             Map<Duration, NonNegotiable> sortedMap = new TreeMap<>(durations).reversed(); //  Sorts durations from greatest to least
 
             LocalDateTime key = keys.get(i);
-            System.out.println("------");
 
             ArrayList<NonNegotiable> timeSlots = new ArrayList<>(sortedMap.values());
             ArrayList<Duration> durations1 = new ArrayList<>(sortedMap.keySet());
@@ -219,14 +207,11 @@ public class Processing {
                     remainingTime -= durations1.get(tracker).toMinutes();
                 } else {
 
-                    System.out.println("Remaining Time in Minutes: " + remainingTime);
-
                     endTime = timeSlots.get(tracker).getStartTime().plusMinutes((long) remainingTime);
 
                     remainingTime =- remainingTime;
                 }
 
-                System.out.println(endTime);
 
                 NonNegotiable event = new NonNegotiable(
                         assignment.getTitle(),
@@ -240,14 +225,8 @@ public class Processing {
             }
 
         }
-        System.out.println(" ---- ");
 
         ArrayList<Event> temp = new ArrayList<>();
-
-        System.out.println("Events to be written to CSV: ");
-        for (NonNegotiable event : schedule) {
-            System.out.println(event);
-        }
 
         for (NonNegotiable event : schedule) {
             temp.add(event);

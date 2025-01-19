@@ -8,8 +8,6 @@ public class NonNegotiable extends Event{
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    // TODO yo check this out https://www.tutorialspoint.com/convert-string-of-time-to-time-object-in-java
-
     // Default Constructor
     public NonNegotiable() {
         super();

@@ -14,10 +14,8 @@ public class CSVWriterStuff {
      * @param events List of Event objects
      */
     public static void writeEventsToCSV(List<Event> events) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
-            // Write CSV headers
-            writer.write("Title,Description,AllDay,Colour,Tag,StartTime,EndTime");
-            writer.newLine();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME, true))) {
+//            writer.newLine();
 
             // Write event data
             for (Event event : events) {
@@ -102,43 +100,21 @@ public class CSVWriterStuff {
         return filteredResults;
     }
 
-    public static ArrayList<NonNegotiable> filterAndRemoveByTitle(String titleToRemove) {
-        ArrayList<NonNegotiable> remainingEvents = new ArrayList<>();
+    public static void filterAndRemoveByTitle(String titleToRemove) {
+        List<String> remainingLines = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader("events.csv"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE_NAME))) {
             String line = br.readLine(); // Read header line
-            String[] headers = line.split(","); // Split headers by comma
-
-            int titleIndex = -1, startTimeIndex = -1, endTimeIndex = -1;
-
-            // Find the indices of the relevant columns
-            for (int i = 0; i < headers.length; i++) {
-                String header = headers[i].trim();
-                if (header.equalsIgnoreCase("Title")) {
-                    titleIndex = i;
-                } else if (header.equalsIgnoreCase("StartTime")) {
-                    startTimeIndex = i;
-                } else if (header.equalsIgnoreCase("EndTime")) {
-                    endTimeIndex = i;
-                }
+            if (line != null) {
+                remainingLines.add(line); // Keep the header
             }
 
-            if (titleIndex == -1 || startTimeIndex == -1 || endTimeIndex == -1) {
-                System.err.println("One or more required columns ('Title', 'StartTime', 'EndTime') are missing in the CSV file.");
-                return remainingEvents;
-            }
-
-            // Process the rows
             while ((line = br.readLine()) != null) {
                 String[] values = line.split(",");
-                if (values.length > Math.max(titleIndex, Math.max(startTimeIndex, endTimeIndex))) {
-                    String title = values[titleIndex].trim();
-                    String startTime = values[startTimeIndex].trim();
-                    String endTime = values[endTimeIndex].trim();
-
-                    // Add to the list only if the title does not match the given title to remove
+                if (values.length > 0) {
+                    String title = values[0].trim(); // Assuming the title is the first column
                     if (!title.equalsIgnoreCase(titleToRemove)) {
-                        remainingEvents.add(new NonNegotiable(title, LocalDateTime.parse(startTime, Main.formatter), LocalDateTime.parse(endTime, Main.formatter)));
+                        remainingLines.add(line); // Keep the event if the title doesn't match
                     }
                 }
             }
@@ -146,8 +122,17 @@ public class CSVWriterStuff {
             e.printStackTrace();
         }
 
-        return remainingEvents;
+        // Write the filtered list back to the file
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_NAME, false))) { // Overwrite the file
+            for (String remainingLine : remainingLines) {
+                bw.write(remainingLine);
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
 
 
 }

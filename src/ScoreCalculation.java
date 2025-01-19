@@ -28,21 +28,25 @@ public class ScoreCalculation {
 
                 // Split CSV line
                 String[] values = line.split(",");
-                String title = values[0];
-                String description = values[1];
-                String startTimeStr = values[5];
-                String endTimeStr = values[6];
+                if (values.length >= 7) { // Ensure the line has enough elements
+                    String title = values[0];
+                    String description = values[1];
+                    String startTimeStr = values[5];
+                    String endTimeStr = values[6];
 
-                // filter by date
-                if (startTimeStr.startsWith(dateFilter)) {
-                    LocalDateTime startTime = LocalDateTime.parse(startTimeStr, formatter);
-                    LocalDateTime endTime = LocalDateTime.parse(endTimeStr, formatter);
+                    // filter by date
+                    if (startTimeStr.startsWith(dateFilter)) {
+                        LocalDateTime startTime = LocalDateTime.parse(startTimeStr, formatter);
+                        LocalDateTime endTime = LocalDateTime.parse(endTimeStr, formatter);
 
-                    NonNegotiable event = new NonNegotiable(title, description, startTime, endTime);
-                    events.add(event);
+                        NonNegotiable event = new NonNegotiable(title, description, startTime, endTime);
+                        events.add(event);
+                    }
+                } else {
+                    System.err.println("Skipping line due to insufficient data: " + line);
                 }
             }
-        } catch (IOException e) {
+            } catch (IOException e) {
             System.err.println(e.getMessage());
         }
 
