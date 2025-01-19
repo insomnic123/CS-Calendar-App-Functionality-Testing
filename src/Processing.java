@@ -1,18 +1,15 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAmount;
 import java.util.*;
 
 public class Processing {
 
+    // Formatter
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     // Calculates the amount of time dedicated to the task each day based on proportional allocation
@@ -24,7 +21,7 @@ public class Processing {
         }
     }
 
-    // Returns a list of the events that happen in a day through reading the CSV - will later be replaced with a database
+    // Returns a list of the events that happen in a day through reading the CSV
     public List<NonNegotiable> getEventsForDay(LocalDateTime day) {
         List<NonNegotiable> events = new ArrayList<>();
         String dateFilter = day.toLocalDate().toString();
@@ -65,13 +62,13 @@ public class Processing {
 
 
     public double findFreeTime(LocalDateTime day) {
-        // Start and end of day (9 AM - 10 PM)
-        LocalDateTime dayStart = day.with(LocalTime.of(7, 0));  // 9 AM
+        // Start and end of day (7 AM - 10 PM)
+        LocalDateTime dayStart = day.with(LocalTime.of(7, 0));  // 7 AM
         LocalDateTime dayEnd = day.with(LocalTime.of(22, 0));  // 10 PM
 
-        List<NonNegotiable> events = getEventsForDay(day);
+        List<NonNegotiable> events = getEventsForDay(day); // List of events occurring on a given day
         Duration busyTime = Duration.ZERO;
-        LocalDateTime currentPointer = dayStart;
+        LocalDateTime currentPointer = dayStart; // Pointer to keep track of free time
 
         for (NonNegotiable event : events) {
             LocalDateTime eventStart = event.getStartTime();
@@ -92,12 +89,13 @@ public class Processing {
         Duration freeTime = totalAvailableTime.minus(busyTime);
 
         if (freeTime.toMinutes() <= 30) {
-            return 0;
+            return 0; // If the free time is less than half an hour, it considers it not free time, since that's not a considerable amount of time
         } else {
             return freeTime.toMinutes() / 60.0; // Return free time in hours
         }
     }
 
+    // Function returning map with start and end times of durations when the individual is free during the day
     public Map<LocalDateTime, LocalDateTime> getEventsAndFreeTime(LocalDateTime day) {
         LocalDateTime dayStart = day.with(LocalTime.of(7, 0));  // 8 AM
         LocalDateTime dayEnd = day.with(LocalTime.of(22, 0));  // 10 PM
@@ -141,14 +139,15 @@ public class Processing {
         return freeTimes;
     }
 
+    // Takes in assignment and returns a schedule for when the individual should work on the assignment
     public ArrayList<NonNegotiable> calculateSchedule(Assignment assignment) throws ParseException {
 
         double totalFreeTime = 0;
-        ArrayList<NonNegotiable> schedule = new ArrayList<>();
+        ArrayList<NonNegotiable> schedule = new ArrayList<>(); // Final schedule to follow
         LocalDate today = LocalDate.now();
-        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline());
-        Map<LocalDateTime, Double> daysAndFreeTime = new LinkedHashMap<>();
-        List<Map<LocalDateTime, LocalDateTime>> freeTimeSlots = new ArrayList<>();
+        long daysBeforeDueDate = ChronoUnit.DAYS.between(today, assignment.getDeadline()); // Calculates time between given day and assignment deadline
+        Map<LocalDateTime, Double> daysAndFreeTime = new LinkedHashMap<>(); // Stores the amount of time free during what days
+        List<Map<LocalDateTime, LocalDateTime>> freeTimeSlots = new ArrayList<>(); // Gets time slots during the day which are free ; List of <aps
 
         // Counts days in between two dates and creates dictionary with (Date, Time Available That Day)
         for (int i = 1; i-1 < daysBeforeDueDate; i++) {
@@ -164,55 +163,59 @@ public class Processing {
             return schedule;
         }
 
-        Map<LocalDateTime, Double> workToDoInTheDay = new LinkedHashMap<>();
+        Map<LocalDateTime, Double> workToDoInTheDay = new LinkedHashMap<>(); // Map containing how much work must be done each day
 
-        double sum = 0;
+        double sum = 0; // Sum of the amount of time to work in a day
+
+        // For loop storing information in the workToDoInDay map
         for (Map.Entry<LocalDateTime, Double> iterator : daysAndFreeTime.entrySet()) {
             double timeToWork = proportionalAllocation(iterator.getValue(), totalFreeTime, assignment.getEstimatedTime());
             sum+= timeToWork;
             workToDoInTheDay.put(iterator.getKey(), timeToWork);
         }
 
+        // Returns list with the keys of the workToDoInTheDay i.e. the days
         List<LocalDateTime> keys = new ArrayList<>(workToDoInTheDay.keySet());
 
+        // Calculates and creates schedule for the assignment -- iterates through each day
         for (int i = 0; i < daysBeforeDueDate; i++) {
-            Map<LocalDateTime, LocalDateTime> timeSlotsDuringDay = freeTimeSlots.get(i);
-            Map<Duration, NonNegotiable> durations = new Hashtable<>();
+            Map<LocalDateTime, LocalDateTime> timeSlotsDuringDay = freeTimeSlots.get(i); // Gets the free time slots during the given day
+            Map<Duration, NonNegotiable> durations = new Hashtable<>(); // Stores duration of each time slot
 
             for (Map.Entry<LocalDateTime, LocalDateTime> entry : timeSlotsDuringDay.entrySet()) {
                 LocalDateTime key = entry.getKey();
                 LocalDateTime value = entry.getValue();
-                Duration duration = Duration.between(key, value);
-                NonNegotiable temp = new NonNegotiable(key, value);
-                durations.put(duration, temp);
+                Duration duration = Duration.between(key, value); // Calculating duration of free time
+                NonNegotiable temp = new NonNegotiable(key, value); // temporary event storing starttime and endtime of the free time slot
+                durations.put(duration, temp); // Stores the duration of each time slot and the correct time slot in the map
             }
 
-            Map<Duration, NonNegotiable> sortedMap = new TreeMap<>(durations).reversed(); //  Sorts durations from greatest to least
+            Map<Duration, NonNegotiable> sortedMap = new TreeMap<>(durations).reversed(); //  Sorts durations from greatest to least by converting to TreeMap
 
-            LocalDateTime key = keys.get(i);
+            LocalDateTime key = keys.get(i); // Gets the respective day
 
-            ArrayList<NonNegotiable> timeSlots = new ArrayList<>(sortedMap.values());
-            ArrayList<Duration> durations1 = new ArrayList<>(sortedMap.keySet());
+            ArrayList<NonNegotiable> timeSlots = new ArrayList<>(sortedMap.values()); // Stores the timeslots of the time slots, from greatest to least
+            ArrayList<Duration> durations1 = new ArrayList<>(sortedMap.keySet()); // Stores the durations of the timeslots
 
-            double remainingTime = workToDoInTheDay.get(key) * 60;
+            double remainingTime = workToDoInTheDay.get(key) * 60; // Calculates the remaining amount of work to do in the day
 
             int tracker = -1;
 
+            // Calculates schedule such that when there is a lot of time remaining, it goes to the largest time slot and 'fills'
+            // it until it is full, then it moves onto the next one, until the time remaining = 0
+            // This will always work and not run into an error where there is too little time, given how the code is structured
             while (remainingTime > 0 && tracker < timeSlots.size() - 1) {
                 tracker++;
                 LocalDateTime endTime;
                 if (remainingTime > durations1.get(tracker).toMinutes()) {
-
                     endTime = timeSlots.get(tracker).getEndTime();
                     remainingTime -= durations1.get(tracker).toMinutes();
                 } else {
-
                     endTime = timeSlots.get(tracker).getStartTime().plusMinutes((long) remainingTime);
-
                     remainingTime =- remainingTime;
                 }
 
-
+                // Creates event
                 NonNegotiable event = new NonNegotiable(
                         assignment.getTitle(),
                         assignment.getDescription(),
@@ -227,10 +230,9 @@ public class Processing {
         }
 
         ArrayList<Event> temp = new ArrayList<>();
-
         for (NonNegotiable event : schedule) {
             temp.add(event);
-        }
+        } // Creates list of events to add to the CSV
 
         CSVWriterStuff.writeEventsToCSV(temp);
 

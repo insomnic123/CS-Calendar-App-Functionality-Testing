@@ -1,6 +1,5 @@
 // Code generated partly by ChatGPT, partly coded myself
 import java.io.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +52,7 @@ public class CSVWriterStuff {
         }
     }
 
+    // Method filtering events by Tags
     public static ArrayList<String> filterByTag(String tagToFilter) {
         ArrayList<String> filteredResults = new ArrayList<>();
 
@@ -100,6 +100,7 @@ public class CSVWriterStuff {
         return filteredResults;
     }
 
+    // Filters events by title, removing unwanted events by creating a duplicate file without the unwanted event, then overwriting the CSV
     public static void filterAndRemoveByTitle(String titleToRemove) {
         List<String> remainingLines = new ArrayList<>();
 
@@ -132,7 +133,4 @@ public class CSVWriterStuff {
             e.printStackTrace();
         }
     }
-
-
-
 }

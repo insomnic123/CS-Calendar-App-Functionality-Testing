@@ -7,6 +7,16 @@ import java.util.stream.Stream;
 
 public class Main {
 
+    // Credits to https://www.mymiller.name/wordpress/programming/java/spring/ansi-colors/ for the colour codes
+    // Regular text colors
+    public static final String RESET = "\u001B[0m";
+    public static final String BLUE = "\u001B[34m";
+
+    public static final String BRIGHT_BLUE = "\u001B[34;1m";
+    public static final String BRIGHT_WHITE = "\u001B[37;1m";
+    public static final String RED = "\u001B[1;91m";
+    public static final String GREEN = "\u001B[1;92m";
+
     public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     public static List<Event> events = new ArrayList<>();
     public static ScoreCalculation scoreCalculation = new ScoreCalculation();
@@ -40,24 +50,27 @@ public class Main {
         }
     }
 
+    // Prints mian menu
     public static void menu() {
-        print("    ICS4U Culminating Project Functionality Testing (File 1 / 3)    ");
+        print(BRIGHT_BLUE + "    ICS4U Culminating Project Functionality Testing (File 1 / 3)    " + RESET);
         print("--------------------------------------------------------------------");
-        print(" [1]                         Add Event                              ");
-        print(" [2]                       Add Assignment                           ");
-        print(" [3]                        Return Score                            ");
-        print(" [4]                         Add a Tag                              ");
+        print(BLUE + " [1]                         Add Event                              " + RESET);
+        print(BLUE + " [2]                       Add Assignment                           " + RESET);
+        print(GREEN + " [3]                        Return Score                            " + RESET);
+        print(RED +" [4]                         Add a Tag                              " + RESET);
         print(" [5]                       View All Tags                             ");
-        print(" [6]                       Filter By Tags                           ");
-        print(" [7]                   Delete Event (by Title)                      ");
-        print(" [8]                            Quit                                ");
+        print(BLUE + " [6]                       Filter By Tags                           " + RESET);
+        print(BRIGHT_WHITE + " [7]                   Delete Event (by Title)                      ");
+        print(" [8]                            Quit                                " + RESET);
     }
 
+    // Creates Tags
     public static void addTag(String tagName, String tagColour) {
         Tag tag = new Tag(tagName, tagColour);
         print("Tag " + tagName + " has been created!");
     }
 
+    // Creates assignment objects w/ varying inputs and schedules them accordingly
     public static void addAssignment(String title, String dueDate, double estimatedTime) throws ParseException {
         try {
             LocalDateTime formattedDueDate = LocalDateTime.parse(dueDate + "T00:00", formatter);
@@ -67,11 +80,7 @@ public class Main {
         } catch (DateTimeParseException e) {
             print("Invalid date format. Please enter the date in the format YYYY-MM-DD'T'HH:MM.");
         }
-
-//        CSVWriterStuff.writeEventsToCSV(events);
     }
-
-
     public static void addAssignment(String title, String description, String dueDate, double estimatedTime) throws ParseException {
         try {
             LocalDateTime formattedDueDate = LocalDateTime.parse(dueDate + "T00:00", formatter);
@@ -82,7 +91,6 @@ public class Main {
             print("Invalid date format. Please enter the date in the format YYYY-MM-DD'T'HH:MM.");
         }
     }
-
     public static void addAssignment(String title, String description, String tag, String dueDate, double estimatedTime) throws ParseException {
         try {
             LocalDateTime formattedDueDate = LocalDateTime.parse(dueDate + "T00:00", formatter);
@@ -94,6 +102,7 @@ public class Main {
         }
     }
 
+    // Creates NonNegotiable objects based on varying parameters
     public static void addEvent(String title, String startTime, String endTime) {
         try {
             LocalDateTime formattedStartTime = LocalDateTime.parse(startTime, formatter);
@@ -112,8 +121,6 @@ public class Main {
             print("Invalid date format. Please enter the date in the format YYYY-MM-DD'T'HH:MM.");
         }
     }
-
-
     public static void addEvent(String title, String description, String startTime, String endTime) {
         try {
             LocalDateTime formattedStartTime = LocalDateTime.parse(startTime, formatter);
@@ -132,7 +139,6 @@ public class Main {
             print("Invalid date format. Please enter the date in the format YYYY-MM-DD'T'HH:MM.");
         }
     }
-
     public static void addEvent(String title, String description, String tag, String startTime, String endTime) {
         try {
             LocalDateTime formattedStartTime = LocalDateTime.parse(startTime, formatter);
@@ -152,17 +158,16 @@ public class Main {
         }
     }
 
-    public static void main(String[] args) throws ParseException {
 
+    public static void main(String[] args) throws ParseException {
         Scanner scanner = new Scanner(System.in);
 
-        Tag tag1 = new Tag("Skibidi", "toilet");
-        Tag tag2 = new Tag("hawk", "tuah");
-
+        // Initial loading bar
         printMsgWithProgressBar("Loading >:)...", 15, 100);
 
         print("");
 
+        // While loop to ensure all options lead to the menu instead of terminating the program
         while (true) {
             print("");
             menu();
@@ -177,8 +182,10 @@ public class Main {
                 continue;
             }
 
-            double tempCounter = 0;
+            double tempCounter = 0; // Keeps track of what method needs to be used
+
             String tag = "";
+
             switch (input) {
                 case 1:
                     print("Would you like to add a description?");
@@ -199,6 +206,7 @@ public class Main {
 
                         String[] tagNamesArray = new String[Tag.tags.size()];
 
+                        // Showcases tags with values and allows the user to select a tag, without using hashmaps
                         while (tagNames.hasMoreElements()) {
                             String tagNamesNextElement = (String) tagNames.nextElement();
                             tagNamesArray[tempCounter2] = tagNamesNextElement;
@@ -311,6 +319,7 @@ public class Main {
                     print("[1]    Current Week's Score       ");
                     print("[2]    Planned Week's Score       ");
 
+                    // Calculates score
                     try {
                         int choice = Integer.parseInt(scanner.nextLine().trim());
                         if (choice == 1) {
@@ -324,7 +333,9 @@ public class Main {
                         print("Invalid input. Please enter a valid number.");
                     }
                     break;
+
                 case 4:
+                    // Allows use to create tags
                     print("Please enter the name for this tag: ");
                     String tagName = scanner.nextLine();
                     print("Please enter the HEX colour value for this tag: ");
@@ -332,7 +343,7 @@ public class Main {
                     addTag(tagName, tagColour);
                     break;
                 case 5:
-
+                    // Showcases all tags
                     int tempCounter3 = 0;
 
                     Enumeration tagNames1 = Tag.tags.keys();
@@ -348,6 +359,7 @@ public class Main {
                     printMsgWithProgressBar("Returning to home menu...", 15, 100);
                     break;
                 case 6:
+                    // Filters events by Tags
                     print("Please select the Tag you wish to filter by: ");
 
                     Enumeration tagNames = Tag.tags.keys();
@@ -372,12 +384,13 @@ public class Main {
                     }
                     break;
                 case 7:
+                    // Removes events based on titles -- Using MongoDB and actual databases, it would be based off of unique IDs, not names
                     print("Please input the title of the event(s) you wish to remove: ");
                     String titleToRemove = scanner.nextLine();
                     CSVWriterStuff.filterAndRemoveByTitle(titleToRemove);
-
                     break;
                 case 8:
+                    // Exits
                     System.exit(0);
                 default:
                     print("Invalid input, please try again!");

@@ -7,9 +7,7 @@ public class Event {
     protected String description;
     protected Boolean allDay; // Can be converted on the frontend
     protected String colour;
-    protected String tag; // Event border colour specifies the tags; named to tag to make it easier to understand
-
-    Dictionary tags = new Hashtable(); // https://codegym.cc/groups/posts/how-to-create-a-dictionary-in-java
+    protected String tag; // Event border colour could specify the tags; named to tag to make it easier to understand
 
     // Default Constructor
     public Event() {
